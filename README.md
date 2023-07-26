@@ -1,10 +1,22 @@
-# Betaflight Configurator
+# MODIFIED BETAFLIGHT CONFIGURATOR
+This adds the `src/js/hijack.js` which opens a websocket on `ws://localhost:3000` for instructions for the control signals from `control/betaflight.py`, and feeds back DShot Telemetry.
 
-![Betaflight](http://static.rcgroups.net/forums/attachments/6/1/0/3/7/6/a9088900-228-bf_logo.jpg)
+`landing.js` and `setup.js` have been modified to automatically retry connect & go to `motors.js` tab, respectively. `Motors.js` is the most heavily modified, controlling GUI elements according to calls from the websocket.
 
-[![Latest version](https://img.shields.io/github/v/release/betaflight/betaflight-configurator)](https://github.com/betaflight/betaflight-configurator/releases) [![Build](https://img.shields.io/github/actions/workflow/status/betaflight/betaflight-configurator/nightly.yml?branch=master)](https://github.com/betaflight/betaflight-configurator/actions/workflows/nightly.yml) [![Crowdin](https://d322cqt584bo4o.cloudfront.net/betaflight-configurator/localized.svg)](https://crowdin.com/project/betaflight-configurator) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=betaflight_betaflight-configurator&metric=alert_status)](https://sonarcloud.io/dashboard?id=betaflight_betaflight-configurator) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+## COMPILING
+Assuming you are in the correct project directory, 
+```console
+$ yay -S nvm
+$ nvm use
+$ npm install yarn -g
+$ yarn install
+$ yarn gulp debug --linux64
+```
 
+## Relevant details of the project
+The project is built with `Vue.js`. When built in debug mode a devtools console can be launched by pressing `F12`.
 
+# ORIGINAL README.MD
 Betaflight Configurator is a crossplatform configuration tool for the Betaflight flight control system.
 
 It runs as an application under different operating systems and allows you to configure the Betaflight software running on any supported Betaflight target. [Downloads are available in Releases.](https://github.com/betaflight/betaflight-configurator/releases)

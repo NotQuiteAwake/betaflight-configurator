@@ -1,5 +1,7 @@
 import GUI, { TABS } from '../gui';
 import { i18n } from '../localization';
+// hijack: added to check conn status
+import CONFIGURATOR from '../data_storage.js';
 
 const landing = {};
 landing.initialize = function (callback) {
@@ -46,6 +48,14 @@ landing.initialize = function (callback) {
     i18n.localizePage();
 
     GUI.content_ready(callback);
+
+    // hijack: automatically attempt connection, repeat until successful
+    // with reference to closeSerial() in main.js 
+    // which informed me of CONFIGURATOR.connectionValid
+    setInterval(function() { 
+        // click only if not connected
+        if (!CONFIGURATOR.connectionValid) $('a.connect').click(); 
+    }, 2000);
   });
 
 };
@@ -54,7 +64,6 @@ landing.cleanup = function (callback) {
     if (callback) callback();
 };
 
-// TODO: remove after all is using modules
 TABS.landing = landing;
 export {
     landing,

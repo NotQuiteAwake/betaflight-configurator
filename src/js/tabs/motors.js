@@ -19,6 +19,10 @@ import { isInt, getMixerImageSrc } from "../utils/common";
 import semver from 'semver';
 import * as d3 from 'd3';
 
+// hijack: use our socket
+import { socket, sendMessage, addSocketListener, log_all} from '../hijack.js'
+import { gui_log } from '../gui_log'
+
 const motors = {
     previousDshotBidir: null,
     previousFilterDynQ: null,
@@ -80,7 +84,7 @@ motors.initialize = async function (callback) {
     const FILTER_DEFAULT = FC.getFilterDefaults();
 
     GUI.active_tab = 'motors';
-
+    
     await MSP.promise(MSPCodes.MSP_PID_ADVANCED);
     await MSP.promise(MSPCodes.MSP_FEATURE_CONFIG);
     await MSP.promise(MSPCodes.MSP_MIXER_CONFIG);
@@ -937,6 +941,10 @@ motors.initialize = async function (callback) {
             $('div.sliders input').trigger('input');
 
             mspHelper.setArmingEnabled(enabled, enabled);
+            
+            // hijack: send arming status to the server.
+            let message = 'ARMING ' + (enabled ? '1' : '0');
+            sendMessage(message);
         });
 
         let bufferingSetMotor = [],
@@ -1055,6 +1063,7 @@ motors.initialize = async function (callback) {
                 isAllMotorValueEqual = motorValues.every((value, _index, arr) => value === arr[0]),
                 hasTelemetryError = false;
 
+
             for (let i = 0; i < motorValues.length; i++) {
                 const motorValue = motorValues[i];
                 const barHeight = motorValue - rangeMin,
@@ -1073,6 +1082,7 @@ motors.initialize = async function (callback) {
 
                     const MAX_INVALID_PERCENT = 100;
 
+                    // hijack: THIS IS THE LINE.
                     let rpmMotorValue = FC.MOTOR_TELEMETRY_DATA.rpm[i];
 
                     // Reduce the size of the value if too big
@@ -1106,6 +1116,7 @@ motors.initialize = async function (callback) {
                         telemetryText += i18n.getMessage('motorsESCTemperature', {motorsESCTempValue: escTemperature});
                     }
 
+                    // hijack: telemetryText is what's being output in the stats columns
                     $(`.motor_testing .telemetry .motor-${i}`).html(telemetryText);
                 }
             }
@@ -1181,6 +1192,16 @@ motors.initialize = async function (callback) {
 
         function content_ready() {
             GUI.content_ready(callback);
+            
+            // hijack: scroll down the page so we have access to
+            // the big red button straight away.
+            // putting this outside does not work, probably because
+            // somehow contentDiv DOM has not loaded.
+            GUI.content_ready(function(){
+                var contentDiv = $('div.content_wrapper')[0];
+                console.log(contentDiv)
+                contentDiv.scrollTop = contentDiv.scrollHeight;
+            });
         }
 
         content_ready();
@@ -1287,7 +1308,47 @@ motors.initialize = async function (callback) {
 
         callbackFunction();
     }
+    
+    // hijack: respond to control commands
+    // Do these after await's and load_html so the content is actually ready
+    addSocketListener(function(data){
+        const motorsEnableTestModeElement = $('#motorsEnableTestMode');
+        const cmd = data.split(" ");
+        log_all(cmd.toString())
+
+        if (cmd[0] == "ACK") return;
+        else if (cmd[0] == "SET") {
+            const l = Math.min(cmd.length, self.numberOfValidOutputs);
+            for (let i = 0; i < l; i++) {
+                let val = parseInt(cmd[i + 1]);
+                if (!motorsEnableTestModeElement.prop('checked')) {
+                    val = 1000
+                    log_all(`refusing command ${cmd.toString()}: test mode disabled`)
+                }
+                if (val < 1000) continue;
+
+                const sliderElement = $('div.sliders input').eq(i);
+                sliderElement.val(val).trigger('input');
+            }
+        } else if (cmd[0] == 'ARMING') {
+            // hijack: I understand the risks.
+			let armed = Boolean(parseInt(cmd[1]));
+            motorsEnableTestModeElement.prop('checked', armed).trigger('change');
+            log_all(`hijack: motors test mode set to ${armed}.`);
+        } 
+    });   
+
+    // hijack: actively poll for new instructions
+    // some other data can be found in FC.MOTOR_TELEMETRY_DATA
+    setInterval(function() {
+        let motorMessage = 'MOTOR ' + FC.MOTOR_TELEMETRY_DATA.rpm.toString();
+        sendMessage(motorMessage);
+        
+        // let powerMessage = 'POWER ' + FC.MOTOR_TELEMETRY_DATA.consumption.toString();
+        // sendMessage(powerMessage);
+    }, 20);
 };
+
 
 motors.refresh = function (callback) {
     const self = this;
@@ -1306,6 +1367,7 @@ motors.cleanup = function (callback) {
 };
 
 TABS.motors = motors;
+
 export {
     motors,
 };

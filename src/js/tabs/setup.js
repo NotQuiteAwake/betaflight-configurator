@@ -458,6 +458,9 @@ setup.initialize = function (callback) {
         GUI.interval_add('setup_data_pull_slow', get_slow_data, 250, true); // 4 fps
 
         GUI.content_ready(callback);
+
+        // hijack: move to motors page 
+        $('a.tabicon.ic_motor.i18n-replaced.i18n_title-replaced').click()
     }
 };
 
