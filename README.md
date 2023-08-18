@@ -13,6 +13,8 @@ $ yarn install
 $ yarn gulp debug --linux64
 ```
 
+On windows, one will want to install `nvm-windows`, explicitly run `nvm install $VERSION` where $VERSION is the version specified in `.nvmrc`. One will also need to replace `--linux64` flag with `--win64`.
+
 ## Relevant details of the project
 The project is built with `Vue.js`. When built in debug mode a devtools console can be launched by pressing `F12`.
 

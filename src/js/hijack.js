@@ -1,14 +1,35 @@
 import { gui_log } from './gui_log'
 
 export let socket = new WebSocket('ws://localhost:3000');
+let socketListeners = [];
 
-socket.onopen = function() {
-    log_all(`hijack: remote connected.`);
+socketSetup();
+
+function onmessage(evt) {
+    var message = evt.data;
+    // execute every listener added from addSocketListener().
+    for (let i = 0; i < socketListeners.length; i++) {
+        socketListeners[i](message);
+    }
 }
 
-socket.onclose = function() {
-    log_all(`hijack: remote disconnected.`);
+function socketSetup() {
+    socket.onopen = function() {
+        log_all(`hijack: remote connected.`);
+    }
+
+    socket.onclose = function() {
+        log_all(`hijack: remote disconnected. Reattempting connection in 1 second.`);
+        setTimeout(function() {
+            socket = new WebSocket('ws://localhost:3000');
+            socketSetup();
+        }, 1000);
+    }
+    
+    socket.onmessage = onmessage;
 }
+
+
 
 // log to both console and GUI
 export function log_all(log) {
@@ -27,8 +48,5 @@ export function sendMessage(message){
 }
 
 export function addSocketListener(callback) {
-    socket.onmessage = function (evt) {
-        var message = evt.data;
-        callback(message);
-    };
+    socketListeners.push(callback);
 }
