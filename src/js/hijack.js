@@ -1,9 +1,20 @@
 import { gui_log } from './gui_log'
 
-export let socket = new WebSocket('ws://localhost:3000');
+const SOCKET_ADDR = 'ws://localhost:3000';
 let socketListeners = [];
 
+let socket = new WebSocket(SOCKET_ADDR);
 socketSetup();
+
+// setInterval is thread safe since it only runs when JS is idle.
+setInterval(function() {
+    if (socket.readyState == socket.CLOSED) {
+        log_all('Remote is disconnected. Reattempting connection.')
+        socket = new WebSocket(SOCKET_ADDR);
+        socketSetup();
+    }
+}, 2000);
+
 
 function onmessage(evt) {
     var message = evt.data;
@@ -18,18 +29,12 @@ function socketSetup() {
         log_all(`hijack: remote connected.`);
     }
 
-    socket.onclose = function() {
-        log_all(`hijack: remote disconnected. Reattempting connection in 1 second.`);
-        setTimeout(function() {
-            socket = new WebSocket('ws://localhost:3000');
-            socketSetup();
-        }, 1000);
-    }
-    
     socket.onmessage = onmessage;
+
+    socket.onclose = function() {
+        // do nothing for now.
+    }
 }
-
-
 
 // log to both console and GUI
 export function log_all(log) {
@@ -38,12 +43,10 @@ export function log_all(log) {
 }
 
 export function sendMessage(message){
-    // we can't use socket.onopen because that executes
-    // only when the connection goes from CONNECTING
-    // to CONNECTED
-    // instead we explicitly check socket readyState
-    if (socket.readyState == 1) {
-        socket.send(message)
+    // socket.onopen is only executed 'on open'.
+    // Instead, send only if socket is OPEN or else, discard.
+    if (socket.readyState == socket.OPEN) {
+        socket.send(message);
     } 
 }
 

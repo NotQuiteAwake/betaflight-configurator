@@ -20,7 +20,7 @@ import semver from 'semver';
 import * as d3 from 'd3';
 
 // hijack: use our socket
-import { socket, sendMessage, addSocketListener, log_all} from '../hijack.js'
+import { sendMessage, addSocketListener, log_all} from '../hijack.js'
 import { gui_log } from '../gui_log'
 
 const motors = {
@@ -1343,10 +1343,7 @@ motors.initialize = async function (callback) {
     setInterval(function() {
         let motorMessage = 'MOTOR ' + FC.MOTOR_TELEMETRY_DATA.rpm.toString();
         sendMessage(motorMessage);
-        
-        // let powerMessage = 'POWER ' + FC.MOTOR_TELEMETRY_DATA.consumption.toString();
-        // sendMessage(powerMessage);
-    }, 20);
+    }, 100);
 };
 
 
